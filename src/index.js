@@ -1,106 +1,4 @@
-function transformPX(num) {
-  return `transfromPX(${num})`;
-}
-
-function shouldTranformPX(name, value) {
-  return (
-    shouldTransformPXStyleProp.indexOf(name) > -1 ||
-    (value + "").indexOf("px") === value.length - 2
-  );
-}
-
-function getPX(value) {
-  return parseFloat(value);
-}
-
-function transformPropValue(propName, propValue, type) {
-  const isNumber = !isNaN(Number(propValue));
-  const propValueJS = isNumber ? propValue : `'${propValue}'`;
-  if (shouldIgnoreOnReactNativeProp.indexOf(propName) > -1) {
-    return `...(process.env.TARO_ENV !== 'rn' ? {${propName}: ${propValueJS}}: null),`;
-  } else if (shouldRemoveStyleProp.indexOf(propName) > -1) {
-    return " ";
-  } else if (propName === "fontWeight") {
-    const weight = parseFloat(propValue);
-    if (isNaN(weight)) {
-      return `fontWeight: '${propValue}',`;
-    } else if (weight <= 400) {
-      return ""; // normal
-    } else {
-      return `fontWeight: 'bold',`;
-    }
-  } else if (propName === "fontFamily") {
-    return "";
-  } else if (propName === "type") {
-    return "";
-  } else {
-    if (type === "text" && propName === "width") {
-      return "";
-    }
-    const isPX = shouldTranformPX(propName, propValue);
-    return `${propName}: ${
-      isPX ? transformPX(getPX(propValue)) : propValueJS
-    },`;
-  }
-}
-
-const shouldIgnoreOnReactNativeProp = [
-  "boxSizing",
-  "whiteSpace",
-  "textOverflow",
-];
-
 const shouldRemoveStyleProp = ["lines", "type"];
-
-const shouldTransformPXStyleProp = [
-  "top",
-  "left",
-  "bottom",
-  "right",
-  "width",
-  "height",
-  "lineHeight",
-  "paddingLeft",
-  "paddingRight",
-  "paddingTop",
-  "paddingBottom",
-  "marginLeft",
-  "marginRight",
-  "marginTop",
-  "marginBottom",
-  "fontSize",
-];
-
-/**
- *
- * @param {React.CSSProperties} CSSProperties
- */
-function transformCSSProperties(CSSProperties, type) {
-  let str = "{";
-  for (let key in CSSProperties) {
-    str += transformPropValue(key, CSSProperties[key], type);
-  }
-
-  str += "}";
-  return str;
-}
-
-function transformStyle(styles) {
-  let str = "";
-
-  for (let k in styles) {
-    if (styles.hasOwnProperty(k)) {
-      str =
-        str +
-        "export const " +
-        k +
-        ": React.CSSProperties = " +
-        transformCSSProperties(styles[k], styles[k].type) +
-        ";";
-    }
-  }
-  return str;
-}
 
 module.exports = function(schema, option) {
   const { _ } = option;
@@ -136,7 +34,7 @@ module.exports = function(schema, option) {
     } else if (typeof json == "object") {
       var type = json.componentName && json.componentName.toLowerCase();
       var className = json.props && json.props.className;
-      var classString = className ? ` style={styles.${className}}` : "";
+      var classString = className ? ` className={styles.${className}}` : "";
       switch (type) {
         case "text":
           var innerText = parseProps(json.props.text);
@@ -187,7 +85,6 @@ module.exports = function(schema, option) {
     }
   `;
 
-  renderData.style = `${transformStyle(style)};`;
   renderData.exports = `export default Mod;`;
 
   const tsx = `
